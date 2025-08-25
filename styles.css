@@ -41,6 +41,14 @@ input[type=checkbox]:hover {
 	border-bottom: solid 1px;
 }
 
+.buttonsBlock a[title*="AI"] {
+	opacity: 0.8;
+}
+
+.buttonsBlock a[title*="AI"]:hover {
+	opacity: 1;
+}
+
 .buttonsBlock {
 	position: fixed;
 	right: 0;

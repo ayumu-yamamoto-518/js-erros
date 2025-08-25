@@ -21,6 +21,7 @@ function initOptionSwitcher(imgNode, domainOption, globalOption, srcValues) {
 document.addEventListener('DOMContentLoaded', function() {
 	var errorsNode = document.getElementById('errors');
 	var copyNode = document.getElementById('copy');
+	var copyWithAINode = document.getElementById('copyWithAI');
 	var clearNode = document.getElementById('clear');
 
 	var iconNode = document.getElementById('showIcon');
@@ -40,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	if(!request.errors) {
 		errorsNode.innerHTML = '<p style="padding: 20px">There are no errors on this page :)</p>';
 		copyNode.remove();
+		copyWithAINode.remove();
 		clearNode.remove();
 	}
 	else {
@@ -52,6 +54,15 @@ document.addEventListener('DOMContentLoaded', function() {
 		copyNode.onclick = function() {
 			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
 			copyToClipboard(request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, ''));
+			closePopup();
+		};
+
+		copyWithAINode.onclick = function() {
+			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
+			var errorText = request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, '');
+			var aiPromptTemplate = localStorage['aiPromptTemplate'] || 'Please help me fix this JavaScript error:\n\n{error}\n\nPlease provide a solution with explanation.';
+			var aiPrompt = aiPromptTemplate.replace(/{error}/g, errorText);
+			copyToClipboard(aiPrompt);
 			closePopup();
 		};
 	}

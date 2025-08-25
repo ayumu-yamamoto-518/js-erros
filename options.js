@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		'ignoreBlockedByClient',
 		'ignoreConnectionRefused',
 		'popupMaxWidth',
-		'popupMaxHeight'
+		'popupMaxHeight',
+		'aiPromptTemplate'
 	];
 
 	for(var i in optionsIds) {

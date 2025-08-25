@@ -18,7 +18,8 @@ function initDefaultOptions() {
 		ignoreBlockedByClient: true,
 		relativeErrorUrl: true,
 		popupMaxWidth: 70,
-		popupMaxHeight: 40
+		popupMaxHeight: 40,
+		aiPromptTemplate: 'Please help me fix this JavaScript error:\n\n{error}\n\nPlease provide a solution with explanation.'
 	};
 	for(var option in optionsValues) {
 		if(typeof localStorage[option] == 'undefined') {
@@ -27,6 +28,8 @@ function initDefaultOptions() {
 		}
 	}
 }
+
+// Initialize when service worker starts
 initDefaultOptions();
 
 // Ignore net::ERR_BLOCKED_BY_CLIENT initiated by AdPlus & etc
@@ -51,6 +54,7 @@ function getIgnoredUrlHash(url) {
 	return url.replace(/\d+/g, '');
 }
 
+// Web request error listener for network errors
 chrome.webRequest.onErrorOccurred.addListener(function(e) {
 	if((localStorage['ignoreBlockedByClient'] && e.error == 'net::ERR_BLOCKED_BY_CLIENT') ||
 		(localStorage['ignoreConnectionRefused'] && e.error == 'net::ERR_CONNECTION_REFUSED')) {
@@ -74,15 +78,15 @@ function handleInitRequest(data, sender, sendResponse) {
 		if(chrome.runtime.lastError) {
 			return;
 		}
-		chrome.pageAction.setTitle({
+		chrome.action.setTitle({
 			tabId: sender.tab.id,
 			title: 'No errors on this page'
 		});
-		chrome.pageAction.setPopup({
+		chrome.action.setPopup({
 			tabId: sender.tab.id,
 			popup: 'popup.html?host=' + encodeURIComponent(tabHost) + '&tabId=' + sender.tab.id
 		});
-		chrome.pageAction.show(sender.tab.id);
+		chrome.action.show(sender.tab.id);
 	});
 	sendResponse({
 		showIcon: typeof localStorage['icon_' + tabHost] != 'undefined' ? localStorage['icon_' + tabHost] : localStorage['showIcon'],
@@ -172,12 +176,12 @@ function handleErrorsRequest(data, sender, sendResponse) {
 			return;
 		}
 
-		chrome.pageAction.setTitle({
+		chrome.action.setTitle({
 			tabId: sender.tab.id,
 			title: 'There are some errors on this page. Click to see details.'
 		});
 
-		chrome.pageAction.setIcon({
+		chrome.action.setIcon({
 			tabId: sender.tab.id,
 			path: {
 				"19": "img/error_19.png",
@@ -196,17 +200,18 @@ function handleErrorsRequest(data, sender, sendResponse) {
 
 		var popupUri = 'popup.html?errors=' + encodeURIComponent(errorsHtml) + '&host=' + encodeURIComponent(tabHost) + '&tabId=' + sender.tab.id;
 
-		chrome.pageAction.setPopup({
+		chrome.action.setPopup({
 			tabId: sender.tab.id,
 			popup: popupUri
 		});
 
-		chrome.pageAction.show(sender.tab.id);
+		chrome.action.show(sender.tab.id);
 
-		sendResponse(chrome.extension.getURL(popupUri));
+		sendResponse(chrome.runtime.getURL(popupUri));
 	});
 }
 
+// Ensure message listener is always active
 chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
 	if(data._initPage) {
 		handleInitRequest(data, sender, sendResponse);
@@ -215,4 +220,9 @@ chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
 		handleErrorsRequest(data, sender, sendResponse);
 	}
 	return true;
+});
+
+// Keep service worker alive
+chrome.runtime.onStartup.addListener(function() {
+	initDefaultOptions();
 });
