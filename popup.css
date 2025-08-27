@@ -19,6 +19,67 @@ body {
   flex-wrap: wrap; 
 }
 
+/* ====== エラー表示エリア ====== */
+
+/* エラー表示コンテナ */
+.errors-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e8dcc0;
+  border-radius: 8px;
+  background: #faf6ed;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+/* スクロールバーのスタイル */
+.errors-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.errors-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.errors-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.errors-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 「もっと見る」ボタンコンテナ */
+.show-more-container {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* 「もっと見る」ボタン */
+.show-more-btn {
+  background: #007cba;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.show-more-btn:hover {
+  background: #005a87;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.show-more-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
 /* ====== ボタンスタイル ====== */
 
 /* ボタンの基本スタイル */

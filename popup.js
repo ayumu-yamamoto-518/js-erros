@@ -47,6 +47,9 @@ function displayErrors() {
 	
 	var html = '<div style="margin-bottom: 15px;"><strong>検出されたエラー (' + errors.length + '件):</strong></div>';
 	
+	// エラー表示エリア（スクロール可能）
+	html += '<div class="errors-container">';
+	
 	errors.forEach(function(error, index) {
 		html += '<div class="log">';
 		html += '<div class="head">';
@@ -57,7 +60,44 @@ function displayErrors() {
 		html += '</div>';
 	});
 	
+	html += '</div>';
+	
+	// エラーが2件以上ある場合は「もっと見る」ボタンを表示
+	if(errors.length > 1) {
+		html += '<div class="show-more-container">';
+		html += '<button id="showMoreBtn" class="show-more-btn">もっと見る (' + (errors.length - 1) + '件)</button>';
+		html += '</div>';
+	}
+	
 	container.innerHTML = html;
+	
+	// 「もっと見る」ボタンの機能
+	if(errors.length > 1) {
+		var showMoreBtn = document.getElementById('showMoreBtn');
+		var errorsContainer = container.querySelector('.errors-container');
+		
+		// 初期状態では最初の1件のみ表示
+		var errorLogs = errorsContainer.querySelectorAll('.log');
+		for(var i = 1; i < errorLogs.length; i++) {
+			errorLogs[i].style.display = 'none';
+		}
+		
+		showMoreBtn.onclick = function() {
+			if(showMoreBtn.textContent.includes('もっと見る')) {
+				// すべて表示
+				for(var i = 0; i < errorLogs.length; i++) {
+					errorLogs[i].style.display = 'block';
+				}
+				showMoreBtn.textContent = '折りたたむ';
+			} else {
+				// 最初の1件のみ表示
+				for(var i = 0; i < errorLogs.length; i++) {
+					errorLogs[i].style.display = i < 1 ? 'block' : 'none';
+				}
+				showMoreBtn.textContent = 'もっと見る (' + (errors.length - 1) + '件)';
+			}
+		};
+	}
 }
 
 // AIプロンプトを生成する関数
