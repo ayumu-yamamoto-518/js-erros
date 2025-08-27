@@ -36,7 +36,6 @@
         
         // content.jsが読み込まれた後にエラーを発生させる
         setTimeout(() => {
-            console.log('Triggering test errors after content script load...');
             triggerError();
             triggerConsoleError();
             triggerPromiseError();
