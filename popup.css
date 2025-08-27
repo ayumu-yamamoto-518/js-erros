@@ -6,7 +6,7 @@ body {
   margin: 12px; 
   min-width: 420px; 
   max-width: 500px;
-  background: #fefbf3; /* 淡いクリーム色 */
+  background: #fefbf3;
   box-sizing: border-box;
 }
 
@@ -118,7 +118,7 @@ button:active {
   border-radius: 8px; 
   padding: 8px; 
   margin: 8px 0; 
-  background: #faf6ed; /* より濃いクリーム色 */
+  background: #faf6ed;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -204,7 +204,7 @@ textarea {
   padding: 8px; 
   border: 1px solid #e8dcc0; /* クリーム色に合わせた境界線 */
   padding-right: 40px; /* コピーアイコンのスペース */
-  background: #faf6ed; /* より濃いクリーム色 */
+  background: #faf6ed;
   box-sizing: border-box;
   resize: vertical;
   font-family: inherit;
@@ -236,7 +236,7 @@ textarea {
   box-shadow: 
     0 4px 8px rgba(0, 0, 0, 0.15),
     0 2px 4px rgba(0, 0, 0, 0.1);
-  border-color: #333; /* ホバー時に少し濃い黒に */
+  border-color: #333;
 }
 
 .copy-icon:active {
