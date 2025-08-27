@@ -12,77 +12,36 @@
     <button onclick="triggerPromiseError()">Promiseエラーを発生させる</button>
     <button onclick="trigger404Error()">404エラーを発生させる</button>
     
-    <div id="debug-info"></div>
-    
     <script>
-        // デバッグ情報を表示
-        function showDebugInfo(message) {
-            const debugDiv = document.getElementById('debug-info');
-            debugDiv.innerHTML += '<p>' + new Date().toLocaleTimeString() + ': ' + message + '</p>';
-        }
-        
-        // 拡張機能の存在確認
-        if (typeof chrome !== 'undefined' && chrome.runtime) {
-            showDebugInfo('Chrome拡張機能APIが利用可能です');
-        } else {
-            showDebugInfo('Chrome拡張機能APIが利用できません');
-        }
-        
-        // カスタムイベントのリスナーを追加
-        document.addEventListener('ErrorToExtension', function(e) {
-            showDebugInfo('ErrorToExtensionイベントを受信: ' + JSON.stringify(e.detail));
-        });
-        
         // エラーを発生させる関数
         function triggerError() {
-            showDebugInfo('エラーを発生させます...');
-            try {
-                undefinedFunction();
-            } catch (e) {
-                showDebugInfo('エラーがキャッチされました: ' + e.message);
-            }
+            undefinedFunction();
         }
         
         // console.errorを発生させる関数
         function triggerConsoleError() {
-            showDebugInfo('console.errorを発生させます...');
             console.error('Test console.error message');
         }
         
         // Promiseエラーを発生させる関数
         function triggerPromiseError() {
-            showDebugInfo('Promiseエラーを発生させます...');
             Promise.reject(new Error('Test Promise error'));
         }
         
         // 404エラーを発生させる関数
         function trigger404Error() {
-            showDebugInfo('404エラーを発生させます...');
             const img = new Image();
-            img.onerror = function() {
-                showDebugInfo('画像読み込みエラーが発生しました');
-            };
             img.src = 'nonexistent-image.png';
         }
         
-        // ページ読み込み時に自動でエラーを発生させる
+        // content.jsが読み込まれた後にエラーを発生させる
         setTimeout(() => {
-            showDebugInfo('自動エラー発生を開始します...');
+            console.log('Triggering test errors after content script load...');
             triggerError();
             triggerConsoleError();
             triggerPromiseError();
             trigger404Error();
-        }, 2000);
-        
-        // グローバルエラーハンドラー
-        window.addEventListener('error', function(e) {
-            showDebugInfo('グローバルエラーハンドラー: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
-        });
-        
-        // 未処理のPromise拒否ハンドラー
-        window.addEventListener('unhandledrejection', function(e) {
-            showDebugInfo('未処理のPromise拒否: ' + e.reason);
-        });
+        }, 1500); // content.jsのチェックより少し遅く実行
     </script>
 </body>
 </html>

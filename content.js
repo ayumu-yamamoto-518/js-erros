@@ -113,41 +113,6 @@
 		});
 	};
 
-	// テスト用：手動でエラーを発生させる関数をグローバルに公開
-	window.testJENError = function() {
-		debugLog('Manual error test triggered');
-		handleNewError({
-			text: 'Manual test error',
-			url: window.location.href,
-			line: null,
-			col: null
-		});
-	};
-
-	// テスト用：test.htmlのエラーを手動で発生させる関数
-	window.triggerTestErrors = function() {
-		debugLog('Triggering test errors manually');
-		
-		// console.errorを発生させる
-		console.error('Test console.error message');
-		
-		// Promiseエラーを発生させる
-		Promise.reject(new Error('Test Promise error'));
-		
-		// 404エラーを発生させる
-		var img = new Image();
-		img.onerror = function() {
-			debugLog('Image error triggered');
-			handleNewError({
-				text: 'Failed to load resource: nonexistent-image.png',
-				url: window.location.href,
-				line: null,
-				col: null
-			});
-		};
-		img.src = 'nonexistent-image.png';
-	};
-
 	// ページ初期化
 	if(!isIFrame) {
 		debugLog('Sending init message to service worker');
@@ -164,10 +129,18 @@
 	// 既存のエラーをチェック（少し遅延させて実行）
 	setTimeout(function() {
 		debugLog('Checking for existing errors...');
-		// 手動でテストエラーを発生させる
-		window.testJENError();
-		
-		// test.htmlのエラーを手動で発生させる
-		window.triggerTestErrors();
+		// 既存のエラーがあるかチェック（例：404エラーなど）
+		var images = document.querySelectorAll('img');
+		images.forEach(function(img) {
+			if(img.naturalWidth === 0 && img.naturalHeight === 0) {
+				// 画像が読み込まれていない場合
+				handleNewError({
+					text: 'Failed to load resource: ' + img.src,
+					url: window.location.href,
+					line: null,
+					col: null
+				});
+			}
+		});
 	}, 1000);
 })();
