@@ -1,39 +1,57 @@
-JavaScript Errors Notifier
-==========================
+# JavaScript Errors Notifier
 
-[![Author](http://img.shields.io/badge/author-@barbushin-blue.svg?style=flat-square)](https://www.linkedin.com/in/barbushin)
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/jafmfknfnkoekkdocjiaipcnmkklaajd.svg?maxAge=2592000&style=flat-square)](https://chrome.google.com/webstore/detail/javascript-errors-notifie/jafmfknfnkoekkdocjiaipcnmkklaajd)
-[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/d/jafmfknfnkoekkdocjiaipcnmkklaajd.svg?maxAge=86400&style=flat-square)](https://chrome.google.com/webstore/detail/javascript-errors-notifie/jafmfknfnkoekkdocjiaipcnmkklaajd)
+## 概要
 
-## Installation
+このChrome拡張機能は、開発者ツールを開かなくてもWebページで発生したJavaScriptエラーを検知し、ポップアップで表示することができます。また、検出されたエラーをAIに送信するためのプロンプトとしてコピーすることも可能です。
 
-1. Add extenstion to your browser 
- * Google Chrome - https://chrome.google.com/webstore/detail/javascript-errors-notifie/jafmfknfnkoekkdocjiaipcnmkklaajd
- * Firefox - https://addons.mozilla.org/en-US/firefox/addon/javascript-errors
-2. Check [test page](http://consle.com/instance/examples/#handle_javascript_errors) to see how JavaScript errors will be handled in your browser.
+## 導入方法
 
-## Features
+### 1. ダウンロードと解凍
+- このリポジトリをローカルフォルダにダウンロードして解凍してください
 
-* Change extension icon color in toolbar when JavaScript error occurs 
-* Show error icon in bottom right page corner
-* Show errors details by click on toolbar or notification icon
-* Error source URL in popup is clickable
-* Show errors details in notification popup
-* Show errors stack traces
-* Show errors column number
-* Error source in notification popups is clickable
-* Does not overrides user-defined error handler
-* Handle console.error() calls
-* Handle missing js/css/other missing files 404 errors
-* Ignore 404 errors initiated by AdBlock and etc
-* Ignores repeated errors
-* Ignores Google Chrome extensions internal errors
-* Error text is linked on StackOverflow search
-* Copy errors details to clipboard
+### 2. Chromeへの追加
+1. Chromeブラウザで `chrome://extensions/` を開く
+2. 右上の「デベロッパーモード」を有効にする
+3. 「パッケージ化されていない拡張機能を読み込む」をクリック
+4. 解凍したフォルダを選択して「フォルダを選択」をクリック
 
-## Contribution
+## 使い方
 
-* Check [Issues](https://github.com/barbushin/javascript-errors-notifier/issues) page for feature requests.
-* Please keep original code style: use `tab` for indention, and all other spacing & braces formatting same as in original.
-* Test your code twice :) Thank you!
+| 手順 | 操作 | 補足 |
+|------|------|------|
+| **1** | 拡張機能をインストールし、ChromeでWebページを開く |||
+| **2** | dev toolsのコンソール内で、エラーが検知されるとポップアップが表示され、エラー件数に応じたカウントバッジが払い出される。 | エラーがない場合は「エラーは発生していません」と表示される||
+| **3** | ポップアップの「コピー」ボタンでAI送信用のテキストをコピーできる | コピーしたテキストは必要に応じて修正可能 ||
+
+## 使い方（その他）
+| 手順 | 操作 | 補足 |
+|------|------|------|
+| **1** |拡張機能アイコンを右クリックし、オプションページを開くと、AIに送るためのプロンプトのデフォルト値が変更できます。||
+| **2** |ポップアップ内の「もっと見る」ボタンを押すと検知したエラーがスクロール形式で閲覧できます。「折りたたむ」ボタンを押すと元に戻ります。||
+
+## 制限事項
+
+- `chrome://extensions/` ページでは動作しません（Chromeの仕様）
+- URLバーが空のページでは動作しません（Chromeの仕様）
+- iframe内のエラーは検知されません
+
+## 言語定義
+
+- **スクリプトエラー**: consoleの中の「error」情報
+- **エラーカウントバッジ**: アイコンの右下に表示される赤い数字
+- **ポップアップ**: エラー詳細を表示する小さなウィンドウ
+
+## 開発者向け情報
+
+### ファイル構成
+- `manifest.json`: 拡張機能の設定ファイル
+- `background.js`: サービスワーカー（エラー処理、バッジ管理）
+- `content.js`: コンテンツスクリプト（エラー検知）
+- `popup.js`: ポップアップUI制御
+- `options.js`: オプションページ制御
+
+### エラー検知の仕組み（ざっくり）
+1. コンテンツスクリプトがページに注入される
+2. 各種エラーイベントリスナーを設定
+3. エラー発生時にサービスワーカーにメッセージ送信
+4. サービスワーカーがバッジとポップアップを更新
