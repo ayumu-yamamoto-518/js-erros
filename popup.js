@@ -1,10 +1,39 @@
 /**
- * JavaScript Errors Notifier - Popup Script
+ * popup.jsは、Chrome拡張機能のポップアップUIを制御し、エラー表示とコピー機能を提供する
  * 
- * エラー表示とコピー機能を提供します。
+ * 主な機能：
+ * 1. エラー表示
+ *    - URLパラメータからエラーデータを解析
+ *    - エラー情報の視覚的表示（1件表示 + スクロール）
+ *    - 「もっと見る」ボタンによる表示切り替え
+ * 
+ * 2. AIプロンプト生成
+ *    - 設定からAIプロンプトテンプレートを取得
+ *    - エラー情報をテンプレートに埋め込み
+ *    - テキストエリアへの自動設定
+ * 
+ * 3. クリップボード機能
+ *    - モダンブラウザでのnavigator.clipboard使用
+ *    - 古いブラウザ対応のフォールバック機能
+ *    - コピー完了の視覚的フィードバック
+ * 
+ * 4. 設定管理
+ *    - chrome.storage.localからの設定取得
+ *    - デフォルト値の提供
+ * 
  */
 
-// 設定を取得する関数
+/**
+ * chrome.storage.localから設定値を取得する関数
+ * 
+ * 指定されたキーの設定値を取得し、存在しない場合はデフォルト値を返す
+ * Promiseベースで非同期処理を行う
+ * 
+ * @param {string} key - 取得する設定のキー
+ * @param {*} defaultValue - 設定が存在しない場合のデフォルト値
+ * @returns {Promise<*>} 設定値またはデフォルト値
+ * 
+ */
 function getStorageValue(key, defaultValue) {
 	return new Promise((resolve) => {
 		chrome.storage.local.get([key], function(result) {
@@ -13,7 +42,16 @@ function getStorageValue(key, defaultValue) {
 	});
 }
 
-// クリップボードにコピーする関数
+/**
+ * クリップボードにテキストをコピーする関数
+ * 
+ * モダンブラウザではnavigator.clipboard.writeTextを使用し、失敗した場合はフォールバック機能を使用する
+ * コピー完了時には視覚的フィードバックを表示する
+ * 
+ * @param {string} text - コピーするテキスト
+ * @returns {void}
+ * 
+ */
 function copyToClipboard(text) {
 	navigator.clipboard.writeText(text).then(function() {
 		// コピー完了の視覚的フィードバック
@@ -25,7 +63,14 @@ function copyToClipboard(text) {
 	});
 }
 
-// コピー完了の視覚的フィードバックを表示
+/**
+ * コピー完了の視覚的フィードバックを表示する関数
+ * 
+ * コピーアイコンを一時的にチェックマークに変更し、2秒後に元の状態に戻す。ユーザーにコピー完了を明示する
+ * 
+ * @returns {void}
+ * 
+ */
 function showCopyFeedback() {
 	var copyIcon = document.getElementById('copyIcon');
 	if(!copyIcon) return;
@@ -46,7 +91,16 @@ function showCopyFeedback() {
 	}, 2000);
 }
 
-// フォールバック用のコピー機能（古いブラウザ対応）
+/**
+ * フォールバック用のコピー機能（古いブラウザ対応）
+ * 
+ * navigator.clipboardが使用できない場合の代替手段
+ * 一時的なtextarea要素を作成し、document.execCommandを使用してコピーを実行する
+ * 
+ * @param {string} text - コピーするテキスト
+ * @returns {void}
+ * 
+ */
 function fallbackCopyToClipboard(text) {
 	var textArea = document.createElement('textarea');
 	textArea.value = text;
@@ -67,12 +121,22 @@ function fallbackCopyToClipboard(text) {
 	}
 }
 
-// エラーデータを解析
+/**
+ * URLパラメータからエラーデータを解析する
+ * 
+ * ポップアップのURLパラメータからtabIdとエラー情報を取得し、グローバル変数に設定する
+ * 
+ * @type {URLSearchParams} URLパラメータの解析結果
+ * @type {string|null} タブID
+ * @type {string|null} エラー情報のJSON文字列
+ * @type {Array<Object>} 解析されたエラー情報の配列
+ */
 var urlParams = new URLSearchParams(window.location.search);
 var tabId = urlParams.get('tabId');
 var errorsParam = urlParams.get('errors');
 var errors = [];
 
+// エラーデータの解析
 if(errorsParam) {
 	try {
 		errors = JSON.parse(decodeURIComponent(errorsParam));
@@ -81,7 +145,15 @@ if(errorsParam) {
 	}
 }
 
-// エラーを表示する関数
+/**
+ * エラーを表示する関数
+ * 
+ * エラー情報をHTMLとして生成し、指定されたコンテナに表示する
+ * エラーが1件の場合はそのまま表示し、2件以上の場合は、最初の1件のみ表示して「もっと見る」ボタンを提供する
+ * 
+ * @returns {void}
+ * 
+ */
 function displayErrors() {
 	var container = document.getElementById('newErrorInfo');
 	
@@ -145,7 +217,15 @@ function displayErrors() {
 	}
 }
 
-// AIプロンプトを生成する関数
+/**
+ * AIプロンプトを生成する関数
+ * 
+ * 設定からAIプロンプトテンプレートを取得し、エラー情報を埋め込んで、完全なAIプロンプトを生成する
+ * {error}プレースホルダーがエラー情報に置き換えられる
+ * 
+ * @returns {Promise<string>} 生成されたAIプロンプト
+ * 
+ */
 async function generateAIPrompt() {
 	var aiPromptTemplate = await getStorageValue('aiPromptTemplate', '以下のJavaScriptエラーを解析して修正方法を教えてください：\n\n{error}');
 	
@@ -156,7 +236,17 @@ async function generateAIPrompt() {
 	return aiPromptTemplate.replace('{error}', errorText);
 }
 
-// ページ読み込み時の処理
+/**
+ * ページ読み込み時の初期化処理
+ * 
+ * DOMContentLoadedイベントで実行され、以下の処理を行う
+ * 1. エラー情報の表示
+ * 2. AIプロンプトの生成とテキストエリアへの設定
+ * 3. コピーアイコンのイベントリスナー設定
+ * 
+ * @returns {Promise<void>} 初期化完了を示すPromise
+ * 
+ */
 document.addEventListener('DOMContentLoaded', async function() {
 	// エラーを表示
 	displayErrors();
