@@ -16,10 +16,55 @@ function getStorageValue(key, defaultValue) {
 // クリップボードにコピーする関数
 function copyToClipboard(text) {
 	navigator.clipboard.writeText(text).then(function() {
-		console.log('コピーしました');
+		// コピー完了の視覚的フィードバック
+		showCopyFeedback();
 	}).catch(function(err) {
 		console.error('コピーに失敗しました:', err);
+		// エラーの場合はフォールバック
+		fallbackCopyToClipboard(text);
 	});
+}
+
+// コピー完了の視覚的フィードバックを表示
+function showCopyFeedback() {
+	var copyIcon = document.getElementById('copyIcon');
+	if(!copyIcon) return;
+	
+	// アイコンの元の状態を保存
+	var originalSrc = copyIcon.src;
+	var originalTitle = copyIcon.title;
+	
+	// アイコンを一時的に変更（チェックマーク）
+	copyIcon.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjY2NjcgNC4xNjY2N0w3LjUgMTMuMzMzM0wzLjMzMzMzIDkuMTY2NjciIHN0cm9rZT0iIzAwN0NCQSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+';
+	copyIcon.title = 'コピー完了！';
+	
+	// 2秒後に元に戻す
+	setTimeout(function() {
+		copyIcon.src = originalSrc;
+		copyIcon.title = originalTitle;
+		copyIcon.style.filter = '';
+	}, 2000);
+}
+
+// フォールバック用のコピー機能（古いブラウザ対応）
+function fallbackCopyToClipboard(text) {
+	var textArea = document.createElement('textarea');
+	textArea.value = text;
+	textArea.style.position = 'fixed';
+	textArea.style.left = '-999999px';
+	textArea.style.top = '-999999px';
+	document.body.appendChild(textArea);
+	textArea.focus();
+	textArea.select();
+	
+	try {
+		document.execCommand('copy');
+		showCopyFeedback();
+	} catch (err) {
+		console.error('フォールバックコピーに失敗しました:', err);
+	} finally {
+		document.body.removeChild(textArea);
+	}
 }
 
 // エラーデータを解析
