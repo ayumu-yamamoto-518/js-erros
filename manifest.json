@@ -48,7 +48,8 @@
 	"permissions": [
 		"tabs",
 		"storage",
-		"webRequest"
+		"webRequest",
+		"scripting"
 	],
 	"host_permissions": [
 		"<all_urls>"

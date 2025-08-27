@@ -1,34 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-	<meta charset="UTF-8">
-	<title>JavaScript Errors Notifier</title>
-	<script type="text/javascript" src="common.js"></script>
-	<script type="text/javascript" src="popup.js"></script>
-	<link rel="stylesheet" type="text/css" href="styles.css" />
-	<style>
-		body {
-			margin-left: 5px;
-			margin-right: 5px;
-			margin-top: 5px;
-			margin-bottom: 0;
-		}
-	</style>
+  <meta charset="utf-8" />
+  <title>CDP Errors (Latest Only)</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+  <!-- 最新エラー 表示 -->
+  <div id="newErrorInfo"></div>
 
-<pre>
-	<span id="errors"></span>
-</pre>
+  <!-- AI に投げる内容 -->
+  <div class="small">💡 上記のエラー内容が、下のテキストエリアに自動的に追記されます。 💡</div>
+  <div id="aiGuide" style="display: none; color: red; font-weight: bold; margin: 8px 0;">最新エラーを挿入ボタンを押して文章をコピーしてください。</div>
+  <div class="textarea-container">
+    <textarea id="promptArea">以下の、エラーを解析してほしい</textarea>
+    <img src="img/copy.png" id="copyIcon" class="copy-icon" alt="コピー" title="内容をコピー">
+  </div>
 
-<div class="buttonsBlock">
-		<a href="#x" title="Copy Error"><img id="copy" src="img/copy.png" /></a
-		><a href="#x" title="Copy with AI Prompt"><img id="copyWithAI" src="img/copy.png" /></a
-		><a href="#x"><img id="showPopup" src="img/popup_off.png" /></a
-		><a href="#x"><img id="showIcon" src="img/icon_off.png" /></a
-		><a href="options.html" title="Options (global)"><img src="img/settings.png" /></a
-		><a href="#x" id="clear" title="Clear"><img src="img/close.png" /></a>
-	</div>
-
+  <script src="popup.js"></script>
 </body>
 </html>

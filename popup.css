@@ -1,0 +1,173 @@
+/* ====== 基本レイアウト ====== */
+
+/* ポップアップ全体のスタイル */
+body { 
+  font: 13px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; 
+  margin: 12px; 
+  min-width: 420px; 
+  background: #fefbf3; /* 淡いクリーム色 */
+}
+
+/* 横並びの要素（ボタンとステータス表示） */
+.row { 
+  display: flex; 
+  gap: 8px; 
+  align-items: center; 
+  margin-bottom: 10px; 
+  flex-wrap: wrap; 
+}
+
+/* ====== ボタンスタイル ====== */
+
+/* ボタンの基本スタイル */
+button { 
+  padding: 6px 10px; 
+  border: 1px solid #ccc; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+button:hover {
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+button:active {
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 1px rgba(0, 0, 0, 0.05);
+  transform: translateY(0);
+}
+
+/* ====== エラーログ表示 ====== */
+
+/* エラーログのコンテナ */
+.log { 
+  border: 1px solid #e8dcc0; /* クリーム色に合わせた境界線 */
+  border-radius: 8px; 
+  padding: 8px; 
+  margin: 8px 0; 
+  background: #faf6ed; /* より濃いクリーム色 */
+}
+
+/* ログのヘッダー部分（レベル、ソース、メタ情報） */
+.head { 
+  display: flex; 
+  gap: 8px; 
+  align-items: center; 
+  margin-bottom: 4px; 
+}
+
+/* ログレベルのピル（error, warning, info） */
+.pill { 
+  font-size: 11px; 
+  padding: 1px 6px; 
+  border-radius: 999px; 
+  border: 1px solid #ddd; 
+}
+
+.pill.error { 
+  border-color: #d33; 
+}
+
+.pill.warning { 
+  border-color: #f2a100; 
+}
+
+.pill.info { 
+  border-color: #999; 
+}
+
+/* メタ情報（URL、行番号、タイムスタンプ） */
+.src { 
+  font-size: 11px; 
+  color: #666; 
+  margin-left: auto; 
+}
+
+/* エラーメッセージ本文 */
+.msg { 
+  white-space: pre-wrap; 
+}
+
+/* メタ情報（非表示） */
+.meta { 
+  font-size: 11px; 
+  color: #666; 
+  margin-top: 4px; 
+}
+
+/* エラーがない場合の表示 */
+.empty { 
+  color: #666; 
+}
+
+/* ====== プロンプトエリア ====== */
+
+/* テキストエリアコンテナ */
+.textarea-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+/* テキストエリア（AIに投げる内容） */
+textarea { 
+  width: 100%; 
+  min-height: 140px; 
+  border-radius: 8px; 
+  padding: 8px; 
+  border: 1px solid #e8dcc0; /* クリーム色に合わせた境界線 */
+  padding-right: 40px; /* コピーアイコンのスペース */
+  background: #faf6ed; /* より濃いクリーム色 */
+}
+
+/* コピーアイコン */
+.copy-icon {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: all 0.2s ease;
+  background: white;
+  border-radius: 50%; /* 完全に丸く */
+  padding: 2px;
+  border: 2px solid #000; /* 黒い枠線 */
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+  object-fit: contain; /* PNGアイコンのサイズ調整 */
+}
+
+.copy-icon:hover {
+  opacity: 1;
+  transform: scale(1.1) translateY(-1px);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: #333; /* ホバー時に少し濃い黒に */
+}
+
+.copy-icon:active {
+  transform: scale(0.95) translateY(0);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* 小さなテキスト（説明文） */
+.small { 
+  font-size: 12px; 
+  color: #666; 
+}

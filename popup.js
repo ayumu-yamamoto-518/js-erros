@@ -1,36 +1,10 @@
 /**
  * JavaScript Errors Notifier - Popup Script
  * 
- * このファイルは拡張機能のポップアップUIを制御し、
- * エラー表示、設定切り替え、クリップボード機能を提供します。
- * 
- * @version 3.1.4
- * @author JavaScript Errors Notifier
+ * エラー表示とコピー機能を提供します。
  */
 
-/** @type {Object} スイッチャーの状態を保持するオブジェクト */
-var switchersStates = {};
-
-/**
- * テキストをクリップボードにコピーする関数
- * 
- * @param {string} str - コピーする文字列
- */
-function copyToClipboard(str) {
-	document.oncopy = function(event) {
-		event.clipboardData.setData('text/plain', str);
-		event.preventDefault();
-	};
-	document.execCommand('Copy', false, null);
-}
-
-/**
- * Chrome Storageから値を取得するヘルパー関数
- * 
- * @param {string} key - 取得するキー
- * @param {*} defaultValue - キーが存在しない場合のデフォルト値
- * @returns {Promise<*>} 保存されている値またはデフォルト値
- */
+// 設定を取得する関数
 function getStorageValue(key, defaultValue) {
 	return new Promise((resolve) => {
 		chrome.storage.local.get([key], function(result) {
@@ -39,117 +13,82 @@ function getStorageValue(key, defaultValue) {
 	});
 }
 
-/**
- * Chrome Storageに値を保存するヘルパー関数
- * 
- * @param {string} key - 保存するキー
- * @param {*} value - 保存する値
- * @returns {Promise<void>} 保存完了時のPromise
- */
-function setStorageValue(key, value) {
-	return new Promise((resolve) => {
-		chrome.storage.local.set({[key]: value}, resolve);
+// クリップボードにコピーする関数
+function copyToClipboard(text) {
+	navigator.clipboard.writeText(text).then(function() {
+		console.log('コピーしました');
+	}).catch(function(err) {
+		console.error('コピーに失敗しました:', err);
 	});
 }
 
-/**
- * オプションスイッチャーを初期化する関数
- * アイコンとポップアップの表示/非表示を切り替えるUIを設定します。
- * 
- * @param {HTMLElement} imgNode - スイッチャーの画像要素
- * @param {string} domainOption - ドメイン固有のオプションキー
- * @param {string} globalOption - グローバルオプションキー
- * @param {Array<string>} srcValues - オン/オフ状態の画像パス配列
- * @returns {Promise<void>}
- */
-async function initOptionSwitcher(imgNode, domainOption, globalOption, srcValues) {
-	var domainValue = await getStorageValue(domainOption, undefined);
-	var globalValue = await getStorageValue(globalOption, false);
-	switchersStates[domainOption] = domainValue !== undefined ? +domainValue : (globalValue ? 1 : 0);
-	imgNode.src = srcValues[switchersStates[domainOption]];
-	imgNode.onclick = async function() {
-		switchersStates[domainOption] = +!switchersStates[domainOption];
-		await setStorageValue(domainOption, switchersStates[domainOption] ? 1 : '');
-		imgNode.src = srcValues[switchersStates[domainOption]];
-	};
+// エラーデータを解析
+var urlParams = new URLSearchParams(window.location.search);
+var tabId = urlParams.get('tabId');
+var errorsParam = urlParams.get('errors');
+var errors = [];
+
+if(errorsParam) {
+	try {
+		errors = JSON.parse(decodeURIComponent(errorsParam));
+	} catch(e) {
+		console.error('エラーデータの解析に失敗:', e);
+	}
 }
 
-/**
- * DOM読み込み完了時の初期化処理
- * エラー表示、ボタン設定、スイッチャー初期化を行います。
- */
+// エラーを表示する関数
+function displayErrors() {
+	var container = document.getElementById('newErrorInfo');
+	
+	if(errors.length === 0) {
+		container.innerHTML = '<div class="empty">エラーは発生していません</div>';
+		return;
+	}
+	
+	var html = '<div style="margin-bottom: 15px;"><strong>検出されたエラー (' + errors.length + '件):</strong></div>';
+	
+	errors.forEach(function(error, index) {
+		html += '<div class="log">';
+		html += '<div class="head">';
+		html += '<span class="pill error">ERROR</span>';
+		html += '<span class="src">' + (error.url || 'unknown') + (error.line ? ':' + error.line : '') + '</span>';
+		html += '</div>';
+		html += '<div class="msg">' + (error.text || 'Unknown error') + '</div>';
+		html += '</div>';
+	});
+	
+	container.innerHTML = html;
+}
+
+// AIプロンプトを生成する関数
+async function generateAIPrompt() {
+	var aiPromptTemplate = await getStorageValue('aiPromptTemplate', '以下のJavaScriptエラーを解析して修正方法を教えてください：\n\n{error}');
+	
+	var errorText = errors.map(function(error) {
+		return 'エラー: ' + (error.text || 'Unknown error') + '\n場所: ' + (error.url || 'unknown') + (error.line ? ':' + error.line : '');
+	}).join('\n\n');
+	
+	return aiPromptTemplate.replace('{error}', errorText);
+}
+
+// ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
-	var errorsNode = document.getElementById('errors');
-	var copyNode = document.getElementById('copy');
-	var copyWithAINode = document.getElementById('copyWithAI');
-	var clearNode = document.getElementById('clear');
-
-	var iconNode = document.getElementById('showIcon');
-	iconNode.title = 'Show error notification icon on ' + request.host;
-	await initOptionSwitcher(iconNode, 'icon_' + request.host, 'showIcon', [
-		'img/icon_off.png',
-		'img/icon_on.png'
-	]);
-
-	var popupNode = document.getElementById('showPopup');
-	popupNode.title = 'Show popup with errors details on ' + request.host;
-	await initOptionSwitcher(popupNode, 'popup_' + request.host, 'showPopup', [
-		'img/popup_off.png',
-		'img/popup_on.png'
-	]);
-
-	if(!request.errors) {
-		errorsNode.innerHTML = '<p style="padding: 20px">There are no errors on this page :)</p>';
-		copyNode.remove();
-		copyWithAINode.remove();
-		clearNode.remove();
+	// エラーを表示
+	displayErrors();
+	
+	// テキストエリアにAIプロンプトを設定
+	var promptArea = document.getElementById('promptArea');
+	if(promptArea && errors.length > 0) {
+		var aiPrompt = await generateAIPrompt();
+		promptArea.value = aiPrompt;
 	}
-	else {
-		errorsNode.innerHTML = request.errors;
-
-		/**
-		 * クリアボタンのクリックハンドラー
-		 * エラーをクリアしてポップアップを閉じます。
-		 */
-		clearNode.onclick = function() {
-			closePopup(isIFrame);
-		};
-
-		/**
-		 * コピーボタンのクリックハンドラー
-		 * エラーテキストをクリップボードにコピーします。
-		 */
-		copyNode.onclick = function() {
-			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
-			copyToClipboard(request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, ''));
-			closePopup();
-		};
-
-		/**
-		 * AIコピーボタンのクリックハンドラー
-		 * AIプロンプトテンプレートを使用してエラーをコピーします。
-		 */
-		copyWithAINode.onclick = async function() {
-			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
-			var errorText = request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, '');
-			var aiPromptTemplate = await getStorageValue('aiPromptTemplate', 'Please help me fix this JavaScript error:\n\n{error}\n\nPlease provide a solution with explanation.');
-			var aiPrompt = aiPromptTemplate.replace(/{error}/g, errorText);
-			copyToClipboard(aiPrompt);
-			closePopup();
+	
+	// コピーアイコンの機能
+	var copyIcon = document.getElementById('copyIcon');
+	if(copyIcon) {
+		copyIcon.onclick = function() {
+			copyToClipboard(promptArea.value);
 		};
 	}
-
-	/**
-	 * ポップアップリロードメッセージのリスナー
-	 * iframeからのリロード要求を受信してポップアップを更新します。
-	 */
-	window.addEventListener('message', function(event) {
-		if(typeof event.data == 'object' && event.data._reloadPopup) {
-			request = parseUrl(event.data.url);
-			errorsNode.innerHTML = request.errors;
-			setTimeout(autoSize, 100);
-			setTimeout(autoSize, 500); // hot fix for slow CPU
-		}
-	});
 });
 
