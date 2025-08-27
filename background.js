@@ -87,7 +87,8 @@ async function initDefaultOptions() {
 /**
  * ページ初期化処理を行う関数
  * 
- * 新しいタブでの拡張機能の初期化を行い、ブラウザアクションのタイトルとポップアップURLを設定する
+ * 新しいタブでの拡張機能の初期化を行い、ブラウザアクションのタイトルとポップアップURLを設定する。
+ * また、エラーカウントバッジをクリアする。
  * 
  * @param {number} tabId - 初期化するタブのID
  * @returns {Promise<void>} 初期化完了を示すPromise
@@ -110,13 +111,20 @@ async function handlePageInit(tabId) {
 		popup: 'popup.html?tabId=' + tabId
 	});
 	
+	// エラーカウントバッジをクリア
+	await chrome.action.setBadgeText({
+		tabId: tabId,
+		text: ''
+	});
+	
 	debugLog('Init completed for tab: ' + tabId);
 }
 
 /**
  * エラー処理を行う関数
  * 
- * エラーが発生した際に、ブラウザアクションのアイコンとタイトルを更新し、エラーデータをポップアップに渡すためのURLを生成する。
+ * エラーが発生した際に、ブラウザアクションのアイコンとタイトルを更新し、エラーデータをポップアップに渡すためのURLを生成する
+ * また、エラーカウントバッジをアイコンの右下に表示する
  * 
  * @param {number} tabId - エラーが発生したタブのID
  * @param {Array<Object>} errors - エラー情報の配列
@@ -143,6 +151,18 @@ async function handleErrors(tabId, errors) {
 		}
 	});
 	
+	// エラーカウントバッジを表示
+	await chrome.action.setBadgeText({
+		tabId: tabId,
+		text: errors.length.toString()
+	});
+	
+	// バッジの背景色を白色に設定
+	await chrome.action.setBadgeBackgroundColor({
+		tabId: tabId,
+		color: '#f0f0f0'
+	});
+	
 	// エラーデータをポップアップに渡すためのURLを生成
 	var popupUrl = 'popup.html?tabId=' + tabId + '&errors=' + encodeURIComponent(JSON.stringify(errors));
 	
@@ -162,7 +182,7 @@ initDefaultOptions();
 /**
  * メッセージリスナー
  * 
- * content.jsからのメッセージを受信し、適切な処理を実行する。
+ * content.jsからのメッセージを受信し、適切な処理を実行する
  * 
  * 対応するメッセージタイプ：
  * - _initPage: ページ初期化要求
