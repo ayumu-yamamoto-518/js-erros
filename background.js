@@ -1,17 +1,47 @@
-﻿function htmlentities(str) {
-	var div = document.createElement('div');
-	div.appendChild(document.createTextNode(str));
-	return div.innerHTML;
+﻿// Service Worker event listeners
+self.addEventListener('install', function(event) {
+	console.log('Service Worker installing...');
+	self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+	console.log('Service Worker activating...');
+	event.waitUntil(self.clients.claim());
+});
+
+// Simple HTML entities function without document
+function htmlentities(str) {
+	return str
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
 }
 
 function getBaseHostByUrl(url) {
 	var localUrlRegexp = /(file:\/\/.*)|(:\/\/[^.:]+([\/?:]|$))/; // file:// | local
 	var rootHostRegexp = /:\/\/(([\w-]+\.\w+)|(\d+\.\d+\.\d+\.\d+)|(\[[\w:]+\]))([\/?:]|$)/; // domain.com | IPv4 | IPv6
-	var subDomainRegexp = /:\/\/[^\/]*\.([\w-]+\.\w+)([\/?:]|$)/; // sub.domain.com
+	var subDomainRegexp = /:\/\/([^\/]*\.([\w-]+\.\w+))([\/?:]|$)/; // sub.domain.com
 	return localUrlRegexp.exec(url) ? 'localhost' : (rootHostRegexp.exec(url) || subDomainRegexp.exec(url))[1];
 }
 
-function initDefaultOptions() {
+// Storage helper functions
+function getStorageValue(key, defaultValue) {
+	return new Promise((resolve) => {
+		chrome.storage.local.get([key], function(result) {
+			resolve(result[key] !== undefined ? result[key] : defaultValue);
+		});
+	});
+}
+
+function setStorageValue(key, value) {
+	return new Promise((resolve) => {
+		chrome.storage.local.set({[key]: value}, resolve);
+	});
+}
+
+async function initDefaultOptions() {
 	var optionsValues = {
 		showIcon: true,
 		ignore404others: true,
@@ -21,10 +51,12 @@ function initDefaultOptions() {
 		popupMaxHeight: 40,
 		aiPromptTemplate: 'Please help me fix this JavaScript error:\n\n{error}\n\nPlease provide a solution with explanation.'
 	};
+	
 	for(var option in optionsValues) {
-		if(typeof localStorage[option] == 'undefined') {
-			var value = optionsValues[option];
-			localStorage[option] = typeof(value) == 'boolean' ? (value ? 1 : '') : value;
+		var value = await getStorageValue(option, undefined);
+		if(value === undefined) {
+			var defaultValue = optionsValues[option];
+			await setStorageValue(option, typeof(defaultValue) == 'boolean' ? (defaultValue ? 1 : '') : defaultValue);
 		}
 	}
 }
@@ -36,18 +68,18 @@ initDefaultOptions();
 var ignoredUrlsHashes = {};
 var ignoredUrlsLimit = 100;
 
-function isUrlIgnoredByType(url) {
+async function isUrlIgnoredByType(url) {
 	if(!url.indexOf('chrome-extension://')) { // ignore Google Chrome extensions 404 errors
 		return true;
 	}
 	var ext = url.split('.').pop().split(/\#|\?/)[0].toLowerCase();
 	if(ext == 'js') {
-		return localStorage['ignore404js'];
+		return await getStorageValue('ignore404js', false);
 	}
 	if(ext == 'css') {
-		return localStorage['ignore404css'];
+		return await getStorageValue('ignore404css', false);
 	}
-	return localStorage['ignore404others'];
+	return await getStorageValue('ignore404others', true);
 }
 
 function getIgnoredUrlHash(url) {
@@ -55,11 +87,14 @@ function getIgnoredUrlHash(url) {
 }
 
 // Web request error listener for network errors
-chrome.webRequest.onErrorOccurred.addListener(function(e) {
-	if((localStorage['ignoreBlockedByClient'] && e.error == 'net::ERR_BLOCKED_BY_CLIENT') ||
-		(localStorage['ignoreConnectionRefused'] && e.error == 'net::ERR_CONNECTION_REFUSED')) {
+chrome.webRequest.onErrorOccurred.addListener(async function(e) {
+	var ignoreBlockedByClient = await getStorageValue('ignoreBlockedByClient', true);
+	var ignoreConnectionRefused = await getStorageValue('ignoreConnectionRefused', false);
+	
+	if((ignoreBlockedByClient && e.error == 'net::ERR_BLOCKED_BY_CLIENT') ||
+		(ignoreConnectionRefused && e.error == 'net::ERR_CONNECTION_REFUSED')) {
 		var url = getIgnoredUrlHash(e.url);
-		if(!isUrlIgnoredByType(url)) {
+		if(!(await isUrlIgnoredByType(url))) {
 			if(ignoredUrlsHashes[url]) { // move url in the end of list
 				delete ignoredUrlsHashes[url];
 			}
@@ -72,7 +107,7 @@ chrome.webRequest.onErrorOccurred.addListener(function(e) {
 	}
 }, {urls: ["<all_urls>"]});
 
-function handleInitRequest(data, sender, sendResponse) {
+async function handleInitRequest(data, sender, sendResponse) {
 	var tabHost = getBaseHostByUrl(data.url);
 	chrome.tabs.get(sender.tab.id, function callback() { // mute closed tab error
 		if(chrome.runtime.lastError) {
@@ -88,17 +123,23 @@ function handleInitRequest(data, sender, sendResponse) {
 		});
 		chrome.action.show(sender.tab.id);
 	});
+	
+	var showIcon = await getStorageValue('icon_' + tabHost, await getStorageValue('showIcon', true));
+	var showPopup = await getStorageValue('popup_' + tabHost, await getStorageValue('showPopup', false));
+	var showPopupOnMouseOver = await getStorageValue('showPopupOnMouseOver', false);
+	var popupMaxWidth = await getStorageValue('popupMaxWidth', 70);
+	var popupMaxHeight = await getStorageValue('popupMaxHeight', 40);
+	
 	sendResponse({
-		showIcon: typeof localStorage['icon_' + tabHost] != 'undefined' ? localStorage['icon_' + tabHost] : localStorage['showIcon'],
-		showPopup: typeof localStorage['popup_' + tabHost] != 'undefined' ? localStorage['popup_' + tabHost] : localStorage['showPopup'],
-		showPopupOnMouseOver: localStorage['showPopupOnMouseOver'],
-		popupMaxWidth: localStorage['popupMaxWidth'],
-		popupMaxHeight: localStorage['popupMaxHeight']
-
+		showIcon: showIcon,
+		showPopup: showPopup,
+		showPopupOnMouseOver: showPopupOnMouseOver,
+		popupMaxWidth: popupMaxWidth,
+		popupMaxHeight: popupMaxHeight
 	});
 }
 
-function handleErrorsRequest(data, sender, sendResponse) {
+async function handleErrorsRequest(data, sender, sendResponse) {
 	var popupErrors = [];
 	var tabHost = getBaseHostByUrl(data.url);
 	var tabBaseUrl = (/^([\w-]+:\/\/[^\/?]+)/.exec(data.url) || [null, null])[1];
@@ -106,11 +147,12 @@ function handleErrorsRequest(data, sender, sendResponse) {
 	for(var i in data.errors) {
 		var error = data.errors[i];
 		var errorHost = getBaseHostByUrl(error.url);
-		if(localStorage['ignoreExternal'] && errorHost != tabHost) {
+		var ignoreExternal = await getStorageValue('ignoreExternal', false);
+		if(ignoreExternal && errorHost != tabHost) {
 			continue;
 		}
 		if(error.is404) {
-			if(ignoredUrlsHashes[getIgnoredUrlHash(error.url)] || isUrlIgnoredByType(error.url)) {
+			if(ignoredUrlsHashes[getIgnoredUrlHash(error.url)] || (await isUrlIgnoredByType(error.url))) {
 				delete data.errors[i];
 				continue;
 			}
@@ -121,25 +163,28 @@ function handleErrorsRequest(data, sender, sendResponse) {
 		else {
 			error.text = error.text.replace(/^Uncaught /, '').replace(/^Error: /, '');
 
-			var errorHtml = localStorage['linkStackOverflow']
+			var linkStackOverflow = await getStorageValue('linkStackOverflow', false);
+			var errorHtml = linkStackOverflow
 				? '<a target="_blank" href="http://www.google.com/search?q=' + encodeURIComponent(htmlentities(error.text)) + '%20site%3Astackoverflow.com" id="">' + htmlentities(error.text) + '</a>'
 				: htmlentities(error.text);
 
 			var m = new RegExp('^(\\w+):\s*(.+)').exec(error.text);
 			error.type = m ? m[1] : 'Uncaught Error';
 
-			if(localStorage['showColumn'] && error.line && error.col) {
+			var showColumn = await getStorageValue('showColumn', false);
+			if(showColumn && error.line && error.col) {
 				error.line = error.line + ':' + error.col;
 			}
 
 			var lines;
-			if(localStorage['showTrace'] && error.stack && (lines = error.stack.replace(/\n\s*at\s+/g, '\n').split('\n')).length > 2) {
+			var showTrace = await getStorageValue('showTrace', false);
+			if(showTrace && error.stack && (lines = error.stack.replace(/\n\s*at\s+/g, '\n').split('\n')).length > 2) {
 				lines.shift();
 				for(var ii in lines) {
 					var urlMatch = /^(.*?)\(?(([\w-]+):\/\/.*?)(\)|$)/.exec(lines[ii]);
 					var url = urlMatch ? urlMatch[2] : null;
 					var method = urlMatch ? urlMatch[1].trim() : lines[ii];
-					var lineMatch = url ? (localStorage['showColumn'] ? /^(.*?):([\d:]+)$/ : /^(.*?):(\d+)(:\d+)?$/).exec(url) : null;
+					var lineMatch = url ? (showColumn ? /^(.*?):([\d:]+)$/ : /^(.*?):(\d+)(:\d+)?$/).exec(url) : null;
 					var line = lineMatch ? lineMatch[2] : null;
 					url = lineMatch ? lineMatch[1] : url;
 					if(!url && method == 'Error (native)') {
@@ -147,7 +192,8 @@ function handleErrorsRequest(data, sender, sendResponse) {
 					}
 					errorHtml += '<br/>&nbsp;';
 					if(url) {
-						errorHtml += localStorage['linkViewSource']
+						var linkViewSource = await getStorageValue('linkViewSource', false);
+						errorHtml += linkViewSource
 							? ('<a href="view-source:' + url + (line ? '#' + line : '') + '" target="_blank">' + url + (line ? ':' + line : '') + '</a>')
 							: (url + (line ? ':' + line : ''));
 					}
@@ -159,7 +205,8 @@ function handleErrorsRequest(data, sender, sendResponse) {
 			}
 			else {
 				var url = error.url + (error.line ? ':' + error.line : '');
-				errorHtml += '<br/>&nbsp;' + (localStorage['linkViewSource']
+				var linkViewSource = await getStorageValue('linkViewSource', false);
+				errorHtml += '<br/>&nbsp;' + (linkViewSource
 					? '<a href="view-source:' + error.url + (error.line ? '#' + error.line : '') + '" target="_blank">' + url + '</a>'
 					: url);
 			}
@@ -171,6 +218,10 @@ function handleErrorsRequest(data, sender, sendResponse) {
 		return;
 	}
 
+	// Get storage values before the callback
+	var relativeErrorUrl = await getStorageValue('relativeErrorUrl', true);
+	var linkViewSource = await getStorageValue('linkViewSource', false);
+	
 	chrome.tabs.get(sender.tab.id, function callback() { // mute closed tab error
 		if(chrome.runtime.lastError) {
 			return;
@@ -190,10 +241,10 @@ function handleErrorsRequest(data, sender, sendResponse) {
 		});
 
 		var errorsHtml = popupErrors.join('<br/><br/>');
-
-		if(localStorage['relativeErrorUrl'] && tabBaseUrl) {
+		
+		if(relativeErrorUrl && tabBaseUrl) {
 			errorsHtml = errorsHtml.split(tabBaseUrl + '/').join('/').split(tabBaseUrl).join('/');
-			if(localStorage['linkViewSource']) {
+			if(linkViewSource) {
 				errorsHtml = errorsHtml.split('href="view-source:/').join('href="view-source:' + tabBaseUrl + '/');
 			}
 		}

@@ -8,17 +8,34 @@ function copyToClipboard(str) {
 	document.execCommand('Copy', false, null);
 }
 
-function initOptionSwitcher(imgNode, domainOption, globalOption, srcValues) {
-	switchersStates[domainOption] = domainOption in localStorage ? +localStorage[domainOption] : (localStorage[globalOption] ? 1 : 0);
+// Storage helper functions
+function getStorageValue(key, defaultValue) {
+	return new Promise((resolve) => {
+		chrome.storage.local.get([key], function(result) {
+			resolve(result[key] !== undefined ? result[key] : defaultValue);
+		});
+	});
+}
+
+function setStorageValue(key, value) {
+	return new Promise((resolve) => {
+		chrome.storage.local.set({[key]: value}, resolve);
+	});
+}
+
+async function initOptionSwitcher(imgNode, domainOption, globalOption, srcValues) {
+	var domainValue = await getStorageValue(domainOption, undefined);
+	var globalValue = await getStorageValue(globalOption, false);
+	switchersStates[domainOption] = domainValue !== undefined ? +domainValue : (globalValue ? 1 : 0);
 	imgNode.src = srcValues[switchersStates[domainOption]];
-	imgNode.onclick = function() {
+	imgNode.onclick = async function() {
 		switchersStates[domainOption] = +!switchersStates[domainOption];
-		localStorage[domainOption] = switchersStates[domainOption] ? 1 : '';
+		await setStorageValue(domainOption, switchersStates[domainOption] ? 1 : '');
 		imgNode.src = srcValues[switchersStates[domainOption]];
 	};
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
 	var errorsNode = document.getElementById('errors');
 	var copyNode = document.getElementById('copy');
 	var copyWithAINode = document.getElementById('copyWithAI');
@@ -26,14 +43,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	var iconNode = document.getElementById('showIcon');
 	iconNode.title = 'Show error notification icon on ' + request.host;
-	initOptionSwitcher(iconNode, 'icon_' + request.host, 'showIcon', [
+	await initOptionSwitcher(iconNode, 'icon_' + request.host, 'showIcon', [
 		'img/icon_off.png',
 		'img/icon_on.png'
 	]);
 
 	var popupNode = document.getElementById('showPopup');
 	popupNode.title = 'Show popup with errors details on ' + request.host;
-	initOptionSwitcher(popupNode, 'popup_' + request.host, 'showPopup', [
+	await initOptionSwitcher(popupNode, 'popup_' + request.host, 'showPopup', [
 		'img/popup_off.png',
 		'img/popup_on.png'
 	]);
@@ -57,10 +74,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			closePopup();
 		};
 
-		copyWithAINode.onclick = function() {
+		copyWithAINode.onclick = async function() {
 			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
 			var errorText = request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, '');
-			var aiPromptTemplate = localStorage['aiPromptTemplate'] || 'Please help me fix this JavaScript error:\n\n{error}\n\nPlease provide a solution with explanation.';
+			var aiPromptTemplate = await getStorageValue('aiPromptTemplate', 'Please help me fix this JavaScript error:\n\n{error}\n\nPlease provide a solution with explanation.');
 			var aiPrompt = aiPromptTemplate.replace(/{error}/g, errorText);
 			copyToClipboard(aiPrompt);
 			closePopup();

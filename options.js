@@ -1,4 +1,19 @@
-document.addEventListener('DOMContentLoaded', function() {
+// Storage helper functions
+function getStorageValue(key, defaultValue) {
+	return new Promise((resolve) => {
+		chrome.storage.local.get([key], function(result) {
+			resolve(result[key] !== undefined ? result[key] : defaultValue);
+		});
+	});
+}
+
+function setStorageValue(key, value) {
+	return new Promise((resolve) => {
+		chrome.storage.local.set({[key]: value}, resolve);
+	});
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
 	var optionsIds = [
 		'showIcon',
 		'showPopup',
@@ -21,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	for(var i in optionsIds) {
 		var option = optionsIds[i];
-		var value = localStorage[option];
+		var value = await getStorageValue(option, '');
 		var input = document.getElementById(option);
 
 		if(input.type == 'checkbox') {
@@ -29,16 +44,16 @@ document.addEventListener('DOMContentLoaded', function() {
 				input.checked = true;
 			}
 			input.onchange = (function(option) {
-				return function() {
-					localStorage[option] = this.checked ? 1 : '';
+				return async function() {
+					await setStorageValue(option, this.checked ? 1 : '');
 				}
 			})(option);
 		}
 		else {
 			input.value = value;
 			input.onkeyup = (function(option) {
-				return function() {
-					localStorage[option] = this.value;
+				return async function() {
+					await setStorageValue(option, this.value);
 				}
 			})(option);
 		}
@@ -48,14 +63,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		closePopup();
 	};
 
-	if(localStorage['jscrNotified'] || localStorage['isRecommended']) {
+	var jscrNotified = await getStorageValue('jscrNotified', false);
+	var isRecommended = await getStorageValue('isRecommended', false);
+	
+	if(jscrNotified || isRecommended) {
 		document.getElementById('recommendation').remove();
 	}
 	else {
 		var linksIds = ['openRecommendation', 'hideRecommendation'];
 		for(var i in linksIds) {
-			document.getElementById(linksIds[i]).onclick = function() {
-				localStorage['isRecommended'] = 3;
+			document.getElementById(linksIds[i]).onclick = async function() {
+				await setStorageValue('isRecommended', 3);
 				closePopup();
 				return this.id == 'openRecommendation';
 			};
