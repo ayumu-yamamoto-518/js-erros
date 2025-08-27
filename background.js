@@ -1,4 +1,14 @@
-﻿// Service Worker event listeners
+﻿/**
+ * JavaScript Errors Notifier - Service Worker
+ * 
+ * このファイルはブラウザ拡張機能のService Workerとして動作し、
+ * JavaScriptエラーの検出、通知、設定管理を担当します。
+ * 
+ * @version 3.1.4
+ * @author JavaScript Errors Notifier
+ */
+
+// Service Worker event listeners
 self.addEventListener('install', function(event) {
 	console.log('Service Worker installing...');
 	self.skipWaiting();
@@ -9,7 +19,14 @@ self.addEventListener('activate', function(event) {
 	event.waitUntil(self.clients.claim());
 });
 
-// Simple HTML entities function without document
+/**
+ * HTMLエンティティをエスケープする関数
+ * Service Workerではdocumentオブジェクトが利用できないため、
+ * 正規表現ベースで実装しています。
+ * 
+ * @param {string} str - エスケープする文字列
+ * @returns {string} HTMLエンティティがエスケープされた文字列
+ */
 function htmlentities(str) {
 	return str
 		.replace(/&/g, '&amp;')
@@ -19,6 +36,12 @@ function htmlentities(str) {
 		.replace(/'/g, '&#039;');
 }
 
+/**
+ * URLからベースホスト名を抽出する関数
+ * 
+ * @param {string} url - 解析するURL
+ * @returns {string} ベースホスト名（例：example.com）
+ */
 function getBaseHostByUrl(url) {
 	var localUrlRegexp = /(file:\/\/.*)|(:\/\/[^.:]+([\/?:]|$))/; // file:// | local
 	var rootHostRegexp = /:\/\/(([\w-]+\.\w+)|(\d+\.\d+\.\d+\.\d+)|(\[[\w:]+\]))([\/?:]|$)/; // domain.com | IPv4 | IPv6
@@ -26,7 +49,13 @@ function getBaseHostByUrl(url) {
 	return localUrlRegexp.exec(url) ? 'localhost' : (rootHostRegexp.exec(url) || subDomainRegexp.exec(url))[1];
 }
 
-// Storage helper functions
+/**
+ * Chrome Storageから値を取得するヘルパー関数
+ * 
+ * @param {string} key - 取得するキー
+ * @param {*} defaultValue - キーが存在しない場合のデフォルト値
+ * @returns {Promise<*>} 保存されている値またはデフォルト値
+ */
 function getStorageValue(key, defaultValue) {
 	return new Promise((resolve) => {
 		chrome.storage.local.get([key], function(result) {
@@ -35,12 +64,25 @@ function getStorageValue(key, defaultValue) {
 	});
 }
 
+/**
+ * Chrome Storageに値を保存するヘルパー関数
+ * 
+ * @param {string} key - 保存するキー
+ * @param {*} value - 保存する値
+ * @returns {Promise<void>} 保存完了時のPromise
+ */
 function setStorageValue(key, value) {
 	return new Promise((resolve) => {
 		chrome.storage.local.set({[key]: value}, resolve);
 	});
 }
 
+/**
+ * デフォルト設定を初期化する関数
+ * 拡張機能の初回起動時にデフォルト値を設定します。
+ * 
+ * @returns {Promise<void>}
+ */
 async function initDefaultOptions() {
 	var optionsValues = {
 		showIcon: true,
@@ -68,6 +110,12 @@ initDefaultOptions();
 var ignoredUrlsHashes = {};
 var ignoredUrlsLimit = 100;
 
+/**
+ * URLの種類に基づいて404エラーを無視するかどうかを判定する関数
+ * 
+ * @param {string} url - チェックするURL
+ * @returns {Promise<boolean>} 無視する場合はtrue、そうでなければfalse
+ */
 async function isUrlIgnoredByType(url) {
 	if(!url.indexOf('chrome-extension://')) { // ignore Google Chrome extensions 404 errors
 		return true;
@@ -82,11 +130,22 @@ async function isUrlIgnoredByType(url) {
 	return await getStorageValue('ignore404others', true);
 }
 
+/**
+ * URLからハッシュ値を生成する関数
+ * 数字を除去してURLの正規化を行います。
+ * 
+ * @param {string} url - ハッシュ化するURL
+ * @returns {string} 正規化されたURL
+ */
 function getIgnoredUrlHash(url) {
 	return url.replace(/\d+/g, '');
 }
 
-// Web request error listener for network errors
+/**
+ * ネットワークエラーのリスナー
+ * webRequest APIを使用してネットワークエラーを検出し、
+ * 設定に基づいてフィルタリングします。
+ */
 chrome.webRequest.onErrorOccurred.addListener(async function(e) {
 	var ignoreBlockedByClient = await getStorageValue('ignoreBlockedByClient', true);
 	var ignoreConnectionRefused = await getStorageValue('ignoreConnectionRefused', false);
@@ -107,6 +166,16 @@ chrome.webRequest.onErrorOccurred.addListener(async function(e) {
 	}
 }, {urls: ["<all_urls>"]});
 
+/**
+ * ページ初期化リクエストを処理する関数
+ * 新しいページが読み込まれた際に呼び出され、
+ * タブの設定とアクションアイコンの初期化を行います。
+ * 
+ * @param {Object} data - リクエストデータ
+ * @param {Object} sender - 送信者情報
+ * @param {Function} sendResponse - レスポンス送信関数
+ * @returns {Promise<void>}
+ */
 async function handleInitRequest(data, sender, sendResponse) {
 	var tabHost = getBaseHostByUrl(data.url);
 	chrome.tabs.get(sender.tab.id, function callback() { // mute closed tab error
@@ -139,6 +208,16 @@ async function handleInitRequest(data, sender, sendResponse) {
 	});
 }
 
+/**
+ * エラーリクエストを処理する関数
+ * JavaScriptエラーが検出された際に呼び出され、
+ * エラーの整形、フィルタリング、通知の表示を行います。
+ * 
+ * @param {Object} data - エラーデータ
+ * @param {Object} sender - 送信者情報
+ * @param {Function} sendResponse - レスポンス送信関数
+ * @returns {Promise<void>}
+ */
 async function handleErrorsRequest(data, sender, sendResponse) {
 	var popupErrors = [];
 	var tabHost = getBaseHostByUrl(data.url);
@@ -262,7 +341,10 @@ async function handleErrorsRequest(data, sender, sendResponse) {
 	});
 }
 
-// Ensure message listener is always active
+/**
+ * メッセージリスナー
+ * content scriptからのメッセージを受信し、適切な処理関数に振り分けます。
+ */
 chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
 	if(data._initPage) {
 		handleInitRequest(data, sender, sendResponse);
@@ -273,7 +355,10 @@ chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
 	return true;
 });
 
-// Keep service worker alive
+/**
+ * 拡張機能起動時のリスナー
+ * Service Workerの起動時にデフォルト設定を初期化します。
+ */
 chrome.runtime.onStartup.addListener(function() {
 	initDefaultOptions();
 });

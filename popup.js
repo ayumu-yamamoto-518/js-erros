@@ -1,5 +1,21 @@
+/**
+ * JavaScript Errors Notifier - Popup Script
+ * 
+ * このファイルは拡張機能のポップアップUIを制御し、
+ * エラー表示、設定切り替え、クリップボード機能を提供します。
+ * 
+ * @version 3.1.4
+ * @author JavaScript Errors Notifier
+ */
+
+/** @type {Object} スイッチャーの状態を保持するオブジェクト */
 var switchersStates = {};
 
+/**
+ * テキストをクリップボードにコピーする関数
+ * 
+ * @param {string} str - コピーする文字列
+ */
 function copyToClipboard(str) {
 	document.oncopy = function(event) {
 		event.clipboardData.setData('text/plain', str);
@@ -8,7 +24,13 @@ function copyToClipboard(str) {
 	document.execCommand('Copy', false, null);
 }
 
-// Storage helper functions
+/**
+ * Chrome Storageから値を取得するヘルパー関数
+ * 
+ * @param {string} key - 取得するキー
+ * @param {*} defaultValue - キーが存在しない場合のデフォルト値
+ * @returns {Promise<*>} 保存されている値またはデフォルト値
+ */
 function getStorageValue(key, defaultValue) {
 	return new Promise((resolve) => {
 		chrome.storage.local.get([key], function(result) {
@@ -17,12 +39,29 @@ function getStorageValue(key, defaultValue) {
 	});
 }
 
+/**
+ * Chrome Storageに値を保存するヘルパー関数
+ * 
+ * @param {string} key - 保存するキー
+ * @param {*} value - 保存する値
+ * @returns {Promise<void>} 保存完了時のPromise
+ */
 function setStorageValue(key, value) {
 	return new Promise((resolve) => {
 		chrome.storage.local.set({[key]: value}, resolve);
 	});
 }
 
+/**
+ * オプションスイッチャーを初期化する関数
+ * アイコンとポップアップの表示/非表示を切り替えるUIを設定します。
+ * 
+ * @param {HTMLElement} imgNode - スイッチャーの画像要素
+ * @param {string} domainOption - ドメイン固有のオプションキー
+ * @param {string} globalOption - グローバルオプションキー
+ * @param {Array<string>} srcValues - オン/オフ状態の画像パス配列
+ * @returns {Promise<void>}
+ */
 async function initOptionSwitcher(imgNode, domainOption, globalOption, srcValues) {
 	var domainValue = await getStorageValue(domainOption, undefined);
 	var globalValue = await getStorageValue(globalOption, false);
@@ -35,6 +74,10 @@ async function initOptionSwitcher(imgNode, domainOption, globalOption, srcValues
 	};
 }
 
+/**
+ * DOM読み込み完了時の初期化処理
+ * エラー表示、ボタン設定、スイッチャー初期化を行います。
+ */
 document.addEventListener('DOMContentLoaded', async function() {
 	var errorsNode = document.getElementById('errors');
 	var copyNode = document.getElementById('copy');
@@ -64,16 +107,28 @@ document.addEventListener('DOMContentLoaded', async function() {
 	else {
 		errorsNode.innerHTML = request.errors;
 
+		/**
+		 * クリアボタンのクリックハンドラー
+		 * エラーをクリアしてポップアップを閉じます。
+		 */
 		clearNode.onclick = function() {
 			closePopup(isIFrame);
 		};
 
+		/**
+		 * コピーボタンのクリックハンドラー
+		 * エラーテキストをクリップボードにコピーします。
+		 */
 		copyNode.onclick = function() {
 			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
 			copyToClipboard(request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, ''));
 			closePopup();
 		};
 
+		/**
+		 * AIコピーボタンのクリックハンドラー
+		 * AIプロンプトテンプレートを使用してエラーをコピーします。
+		 */
 		copyWithAINode.onclick = async function() {
 			var isWindows = navigator.appVersion.indexOf('Windows') != -1;
 			var errorText = request.errors.replace(/<br\/>/g, isWindows ? '\r\n' : '\n').replace(/<.*?>/g, '');
@@ -84,6 +139,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 		};
 	}
 
+	/**
+	 * ポップアップリロードメッセージのリスナー
+	 * iframeからのリロード要求を受信してポップアップを更新します。
+	 */
 	window.addEventListener('message', function(event) {
 		if(typeof event.data == 'object' && event.data._reloadPopup) {
 			request = parseUrl(event.data.url);
