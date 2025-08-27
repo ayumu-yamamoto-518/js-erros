@@ -1,6 +1,4 @@
 /**
- * JavaScript Errors Notifier - Content Script
- * 
  * このファイルはChrome拡張機能のContent Scriptとして動作し、
  * ウェブページ内でJavaScriptエラーを検知してポップアップ通知を表示する
  * 
@@ -24,9 +22,6 @@
  *    - Service Workerへの初期化メッセージ送信
  *    - iframe判定による処理分岐
  * 
- * @version 3.1.4
- * @author JavaScript Errors Notifier
- * @since 2025
  */
 
 (function() {

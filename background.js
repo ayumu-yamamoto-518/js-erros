@@ -19,8 +19,6 @@
  *    - content.jsからのメッセージ受信と処理
  *    - エラー情報の集約とポップアップへの転送
  * 
- * @author JavaScript Errors Notifier
- * @since 2025
  */
 
 /**
