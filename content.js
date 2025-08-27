@@ -1,5 +1,5 @@
 /**
- * このファイルはChrome拡張機能のContent Scriptとして動作し、
+ * content.jsはChrome拡張機能のContent Scriptとして動作し、
  * ウェブページ内でJavaScriptエラーを検知してポップアップ通知を表示する
  * 
  * 主な機能：
