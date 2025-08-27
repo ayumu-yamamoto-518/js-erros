@@ -5,7 +5,9 @@ body {
   font: 13px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; 
   margin: 12px; 
   min-width: 420px; 
+  max-width: 500px;
   background: #fefbf3; /* 淡いクリーム色 */
+  box-sizing: border-box;
 }
 
 /* 横並びの要素（ボタンとステータス表示） */
@@ -56,6 +58,8 @@ button:active {
   padding: 8px; 
   margin: 8px 0; 
   background: #faf6ed; /* より濃いクリーム色 */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* ログのヘッダー部分（レベル、ソース、メタ情報） */
@@ -64,6 +68,7 @@ button:active {
   gap: 8px; 
   align-items: center; 
   margin-bottom: 4px; 
+  flex-wrap: wrap;
 }
 
 /* ログレベルのピル（error, warning, info） */
@@ -72,18 +77,22 @@ button:active {
   padding: 1px 6px; 
   border-radius: 999px; 
   border: 1px solid #ddd; 
+  white-space: nowrap;
 }
 
 .pill.error { 
   border-color: #d33; 
+  color: #d33;
 }
 
 .pill.warning { 
   border-color: #f2a100; 
+  color: #f2a100;
 }
 
 .pill.info { 
   border-color: #999; 
+  color: #999;
 }
 
 /* メタ情報（URL、行番号、タイムスタンプ） */
@@ -91,11 +100,14 @@ button:active {
   font-size: 11px; 
   color: #666; 
   margin-left: auto; 
+  word-break: break-all;
 }
 
 /* エラーメッセージ本文 */
 .msg { 
   white-space: pre-wrap; 
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* メタ情報（非表示） */
@@ -108,6 +120,9 @@ button:active {
 /* エラーがない場合の表示 */
 .empty { 
   color: #666; 
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
 }
 
 /* ====== プロンプトエリア ====== */
@@ -115,8 +130,9 @@ button:active {
 /* テキストエリアコンテナ */
 .textarea-container {
   position: relative;
-  display: inline-block;
+  display: block;
   width: 100%;
+  margin-top: 15px;
 }
 
 /* テキストエリア（AIに投げる内容） */
@@ -128,6 +144,9 @@ textarea {
   border: 1px solid #e8dcc0; /* クリーム色に合わせた境界線 */
   padding-right: 40px; /* コピーアイコンのスペース */
   background: #faf6ed; /* より濃いクリーム色 */
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: inherit;
 }
 
 /* コピーアイコン */
@@ -170,4 +189,6 @@ textarea {
 .small { 
   font-size: 12px; 
   color: #666; 
+  margin: 10px 0;
+  text-align: center;
 }
