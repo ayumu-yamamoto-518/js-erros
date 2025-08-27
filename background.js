@@ -4,6 +4,11 @@
  * エラー検知とポップアップ表示を管理します。
  */
 
+// デバッグログ関数
+function debugLog(message) {
+	console.log('[JEN Service Worker]', message);
+}
+
 // 設定を取得する関数
 function getStorageValue(key, defaultValue) {
 	return new Promise((resolve) => {
@@ -22,10 +27,12 @@ function setStorageValue(key, value) {
 
 // デフォルト設定を初期化
 async function initDefaultOptions() {
+	debugLog('Initializing default options...');
 	var aiPromptTemplate = await getStorageValue('aiPromptTemplate', '以下のJavaScriptエラーを解析して修正方法を教えてください：\n\n{error}');
 	if(!aiPromptTemplate) {
 		await setStorageValue('aiPromptTemplate', '以下のJavaScriptエラーを解析して修正方法を教えてください：\n\n{error}');
 	}
+	debugLog('Default options initialized');
 }
 
 // 初期化
@@ -33,7 +40,10 @@ initDefaultOptions();
 
 // メッセージリスナー
 chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
+	debugLog('Message received: ' + JSON.stringify(data));
+	
 	if(data._initPage) {
+		debugLog('Handling init request from tab: ' + sender.tab.id);
 		// ページ初期化
 		chrome.action.setTitle({
 			tabId: sender.tab.id,
@@ -43,9 +53,11 @@ chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
 			tabId: sender.tab.id,
 			popup: 'popup.html?tabId=' + sender.tab.id
 		});
+		debugLog('Init completed for tab: ' + sender.tab.id);
 		sendResponse({});
 	}
 	else if(data._errors) {
+		debugLog('Handling errors request from tab: ' + sender.tab.id + ', errors count: ' + data.errors.length);
 		// エラー処理
 		chrome.action.setTitle({
 			tabId: sender.tab.id,
@@ -66,6 +78,7 @@ chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
 			popup: popupUrl
 		});
 		
+		debugLog('Sending popup URL: ' + popupUrl);
 		sendResponse(popupUrl);
 	}
 	return true;
